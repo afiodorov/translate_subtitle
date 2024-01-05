@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from itertools import batched
 from math import ceil
 from pathlib import Path
-from typing import cast
+from typing import cast, Any
 
 from openai import OpenAI
 from openai.types.chat import ChatCompletionMessageParam
@@ -97,7 +97,7 @@ if __name__ == "__main__":
         context = text
         responses.append(resp)
 
-    translated: dict[int, str] = {}
+    translated: dict[int, Any] = {}
     for r in responses:
         parsed = json.loads(r)
         try:
@@ -109,7 +109,17 @@ if __name__ == "__main__":
     with input_path.with_suffix(".pt.srt").open("w") as f:
         for i, translation in enumerate(translated.values()):
             if isinstance(translation, dict):
-                translation = translation.get("translated")
+                if "translated" in translation:
+                    translation = translation["translated"]
+                elif "text" in translation:
+                    translation = translation["text"]
+                elif "translation" in translation:
+                    translation = translation["translation"]
+                elif "pt" in translation:
+                    translation = translation["pt"]
+                else:
+                    raise ValueError(f"unknown dict {translation}")
+
             if not isinstance(translation, str):
                 raise ValueError(f"wrong type: {translation}")
 
