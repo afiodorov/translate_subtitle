@@ -18,10 +18,10 @@ from translate_subtitle.extract import extract_subtitles
 def get_completion(context: dict, text: dict):
     client = OpenAI()
 
-    prompt = """
-    You translate movies from informal Russian into informal Portuguese.
-    You reply in json (use the same schema as input).
-    """.strip()
+    prompt = (
+        "You translate movies from informal Russian into informal Portuguese. "
+        "You reply in json."
+    )
 
     msgs = [
         {
@@ -97,7 +97,14 @@ if __name__ == "__main__":
         context = text
         responses.append(resp)
 
-    translated = {int(x[0]): x[1] for r in responses for x in json.loads(r).items()}
+    translated: dict[int, str] = {}
+    for r in responses:
+        parsed = json.loads(r)
+        try:
+            translated |= {int(x[0]): x[1] for x in parsed.items()}
+        except:
+            print(r)
+            raise
 
     with input_path.with_suffix(".pt.srt").open("w") as f:
         for i, translation in enumerate(translated.values()):
