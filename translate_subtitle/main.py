@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from itertools import batched
 from math import ceil
 from pathlib import Path
-from typing import cast, Any
+from typing import Any, cast
 
 from openai import OpenAI
 from openai.types.chat import ChatCompletionMessageParam
@@ -14,13 +14,12 @@ from translate_subtitle.cache import cache
 from translate_subtitle.extract import extract_subtitles
 
 
-@cache()
 def get_completion(context: dict, text: dict):
     client = OpenAI()
 
     prompt = (
         "You translate movies from informal Russian into informal Portuguese. "
-        "You reply in json."
+        "You reply in json that has same number of phrases as the input."
     )
 
     msgs = [
@@ -78,6 +77,9 @@ if __name__ == "__main__":
     input_path: Path = args.input
     extracted: Path = input_path.with_suffix(".srt")
 
+    temp_dir = Path("/tmp") / input_path.with_suffix("").name
+    get_completion = cache(temp_dir)(get_completion)
+
     if not extracted.exists():
         extracted = extract_subtitles(input_path, extracted)
 
@@ -89,22 +91,30 @@ if __name__ == "__main__":
         subtitles.append(Text(number=int(n), time=ts, text="\n".join(rest)))
 
     context = {}
+    original = []
     responses = []
 
-    for b in tqdm(batched(subtitles, 20), total=ceil(len(subtitles) / 20)):
+    for i, b in enumerate(
+        tqdm(batched(subtitles, 20), total=ceil(len(subtitles) / 20))
+    ):
         text = {t.number: t.text for t in b}
         resp = get_completion(context, text)
         context = text
         responses.append(resp)
+        original.append(text)
 
     translated: dict[int, Any] = {}
-    for r in responses:
+    for i, (r, o) in enumerate(zip(responses, original)):
         parsed = json.loads(r)
         try:
-            translated |= {int(x[0]): x[1] for x in parsed.items()}
+            translations = {int(x[0]): x[1] for x in parsed.items()}
         except:
             print(r)
             raise
+        if not translations.keys() == o.keys():
+            raise ValueError(f"wrong batch {i}")
+
+        translated |= translations
 
     with input_path.with_suffix(".pt.srt").open("w") as f:
         for i, translation in enumerate(translated.values()):
