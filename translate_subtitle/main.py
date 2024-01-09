@@ -108,11 +108,10 @@ if __name__ == "__main__":
         parsed = json.loads(r)
         try:
             translations = {int(x[0]): x[1] for x in parsed.items()}
-        except:
-            print(r)
-            raise
+        except ValueError as e:
+            raise ValueError(f"invalid batch {i}") from e
         if not translations.keys() == o.keys():
-            raise ValueError(f"wrong batch {i}")
+            raise ValueError(f"not matching batch {i}")
 
         translated |= translations
 
