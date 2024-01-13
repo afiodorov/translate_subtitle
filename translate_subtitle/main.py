@@ -28,6 +28,8 @@ def get_completion(context: dict, text: dict):
         f"You translate movies from informal Russian into informal Portuguese. "
         f"You reply in json that has same number of phrases as the input."
         f"Reply in the following json schema: {json.dumps(schema)}."
+        f"The output json should have following keys: {json.dumps(list(text.keys()))}."
+        f"Another program will use your output so make sure it's correct."
     )
 
     msgs = [
