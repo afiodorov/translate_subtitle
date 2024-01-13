@@ -17,9 +17,17 @@ from translate_subtitle.extract import extract_subtitles
 def get_completion(context: dict, text: dict):
     client = OpenAI()
 
+    schema: dict[str, Any] = {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "patternProperties": {"^[0-9]+$": {"type": "string"}},
+        "additionalProperties": False,
+    }
+
     prompt = (
-        "You translate movies from informal Russian into informal Portuguese. "
-        "You reply in json that has same number of phrases as the input."
+        f"You translate movies from informal Russian into informal Portuguese. "
+        f"You reply in json that has same number of phrases as the input."
+        f"Reply in the following json schema: {json.dumps(schema)}."
     )
 
     msgs = [
