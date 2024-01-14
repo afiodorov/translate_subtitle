@@ -4,14 +4,11 @@ from pathlib import Path
 
 def cache(dir_: Path):
     dir_.mkdir(parents=True, exist_ok=True)
-    counter = 0
 
     def decorator(func):
         @wraps(func)
         def with_caching(*args, **kwargs):
-            nonlocal counter
-            file_name = f"batch_{counter}.txt"
-            counter += 1
+            file_name = str(kwargs["_cache_file"])
             file_path = dir_ / file_name
             if not file_path.exists():
                 ret = func(*args, **kwargs)

@@ -4,58 +4,14 @@ from dataclasses import dataclass
 from itertools import batched
 from math import ceil
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
-from openai import OpenAI
-from openai.types.chat import ChatCompletionMessageParam
 from tqdm import tqdm
 
+from translate_subtitle.ai import fix_completion, get_completion
 from translate_subtitle.cache import cache
 from translate_subtitle.extract import extract_subtitles
-
-
-def get_completion(context: dict, text: dict):
-    client = OpenAI()
-
-    schema: dict[str, Any] = {
-        "$schema": "http://json-schema.org/draft-07/schema#",
-        "type": "object",
-        "patternProperties": {"^[0-9]+$": {"type": "string"}},
-        "additionalProperties": False,
-    }
-
-    prompt = (
-        f"You translate movies from informal Russian into informal Portuguese. "
-        f"You reply in json that has same number of phrases as the input."
-        f"Reply in the following json schema: {json.dumps(schema)}."
-        f"The output json should have following keys: {json.dumps(list(text.keys()))}."
-        f"Another program will use your output so make sure it's correct."
-    )
-
-    msgs = [
-        {
-            "role": "system",
-            "content": prompt,
-        },
-    ]
-    if context:
-        msgs.append(
-            {
-                "role": "system",
-                "content": f"Conversational context to help you translate better: {json.dumps(context)}",
-            }
-        )
-
-    msgs.append({"role": "user", "content": json.dumps(text)})
-
-    chat_completion = client.chat.completions.create(
-        messages=cast(list[ChatCompletionMessageParam], msgs),
-        model="gpt-4-1106-preview",
-        response_format={"type": "json_object"},
-        seed=0,
-    )
-
-    return chat_completion.choices[0].message.content
+from translate_subtitle.formatting import to_int_keys
 
 
 @dataclass()
@@ -89,6 +45,7 @@ if __name__ == "__main__":
 
     temp_dir = Path("/tmp") / input_path.with_suffix("").name
     get_completion = cache(temp_dir)(get_completion)
+    fix_completion = cache(temp_dir)(fix_completion)
 
     if not extracted.exists():
         extracted = extract_subtitles(input_path, extracted)
@@ -108,7 +65,7 @@ if __name__ == "__main__":
         tqdm(batched(subtitles, 20), total=ceil(len(subtitles) / 20))
     ):
         text = {t.number: t.text for t in b}
-        resp = get_completion(context, text)
+        resp = get_completion(context, text, _cache_file=f"batch_{i}.txt")
         context = text
         responses.append(resp)
         original.append(text)
@@ -121,7 +78,15 @@ if __name__ == "__main__":
         except ValueError as e:
             raise ValueError(f"invalid batch {i}") from e
         if not translations.keys() == o.keys():
-            raise ValueError(f"not matching batch {i}")
+            fixed = to_int_keys(
+                json.loads(
+                    fix_completion(o, translations, _cache_file=f"batch_{i}_fixed")
+                )
+            )
+            if fixed.keys() == o.keys():
+                translations = fixed
+            else:
+                raise ValueError(f"not matching batch {i}")
 
         translated |= translations
 
