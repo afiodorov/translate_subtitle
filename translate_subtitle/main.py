@@ -75,7 +75,6 @@ if __name__ == "__main__":
         try:
             translations = to_int_keys(json.loads(r))
         except ValueError as e:
-            breakpoint()
             raise ValueError(f"invalid batch {i}") from e
 
         if not translations.keys() == o.keys():
