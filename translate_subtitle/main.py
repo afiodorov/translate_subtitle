@@ -72,15 +72,16 @@ if __name__ == "__main__":
 
     translated: dict[int, Any] = {}
     for i, (r, o) in enumerate(zip(responses, original)):
-        parsed = json.loads(r)
         try:
-            translations = {int(x[0]): x[1] for x in parsed.items()}
+            translations = to_int_keys(json.loads(r))
         except ValueError as e:
+            breakpoint()
             raise ValueError(f"invalid batch {i}") from e
+
         if not translations.keys() == o.keys():
             fixed = to_int_keys(
                 json.loads(
-                    fix_completion(o, translations, _cache_file=f"batch_{i}_fixed")
+                    fix_completion(o, translations, _cache_file=f"batch_{i}_fixed.txt")
                 )
             )
             if fixed.keys() == o.keys():
