@@ -57,13 +57,19 @@ def fix_completion(
     }
 
     prompt = (
-        f"You correct translated subtitles."
-        f"You need to make sure corrected output follows the following json schema."
-        f"Schema: {json.dumps(schema)}. Use utf-8 in the output."
-        f"The output json should have following keys: {json.dumps(list(o.keys()))}"
-        f"just like the original."
-        f"Another program will use your output so make sure it's correct."
-        f"Here is the orignal text: {json.dumps(o)}."
+        f"You synchronise translated subtitles."
+        f"Make sure there's a match between original & translated text so that the dialogue "
+        f"is in sync."
+        f"For example if you see 560: -Hello 561: -Mom in the original, but 560: -Привет Мама"
+        f" in the translation, you can just split the sentence so that it is 560: Привет 561: Мама"
+        f" in the translation."
+        f"You need to make sure corrected output follows the following json schema. "
+        f"Schema: {json.dumps(schema)}. Use utf-8 in the output. "
+        f"Fix this error: output json doesn't have same keys as input json. "
+        f"The output json should have following keys: {json.dumps(list(o.keys()))}. "
+        f"just like the original. So make sure the output has {len(o.keys())} items. "
+        f"Another program will use your output so make sure it's correct. "
+        f"Here is the orignal text: {json.dumps(o)}. "
     )
 
     msgs = [
@@ -82,4 +88,5 @@ def fix_completion(
         seed=0,
     )
     resp = str(chat_completion.choices[0].message.content)
-    return json.dumps(to_int_keys(json.loads(resp)), indent=4)
+    parsed = json.loads(resp)
+    return json.dumps(to_int_keys(parsed), indent=4, ensure_ascii=False)
