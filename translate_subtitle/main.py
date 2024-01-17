@@ -41,21 +41,24 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     input_path: Path = args.input
-    extracted: Path = input_path.with_suffix(".srt")
 
     temp_dir = Path("/tmp") / input_path.with_suffix("").name
     get_completion = cache(temp_dir)(get_completion)
     fix_completion = cache(temp_dir)(fix_completion)
 
-    if not extracted.exists():
-        extracted = extract_subtitles(input_path, extracted)
+    if input_path.suffix == ".srt":
+        extracted: Path = input_path
+    else:
+        extracted: Path = input_path.with_suffix(".srt")
+        if not extracted.exists():
+            extracted = extract_subtitles(input_path, extracted)
 
     text = extracted.read_text().strip().split("\n\n")
 
     subtitles = []
     for t in text:
-        n, ts, *rest = t.split("\n")
-        subtitles.append(Text(number=int(n), time=ts, text="\n".join(rest)))
+        num, ts, *rest = t.split("\n")
+        subtitles.append(Text(number=int(num), time=ts, text="\n".join(rest)))
 
     context = {}
     original = []
