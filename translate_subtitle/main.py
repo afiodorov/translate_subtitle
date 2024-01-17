@@ -53,7 +53,7 @@ if __name__ == "__main__":
         if not extracted.exists():
             extracted = extract_subtitles(input_path, extracted)
 
-    text = extracted.read_text().strip().split("\n\n")
+    text = extracted.read_text(encoding="utf-8-sig").strip().split("\n\n")
 
     subtitles = []
     for t in text:
