@@ -25,7 +25,7 @@ def get_completion(
     if context:
         msgs.append(
             {
-                "role": "system",
+                "role": "user",
                 "content": f"Conversational context to help you translate better: {json.dumps(context, ensure_ascii=False)}",
             }
         )
@@ -54,7 +54,7 @@ def fix_completion(
         context,
         text,
         extra=[
-            {"role": "system", "content": json.dumps(wrong, ensure_ascii=False)},
+            {"role": "assistant", "content": json.dumps(wrong, ensure_ascii=False)},
             {
                 "role": "user",
                 "content": f"Great, but fix this error now: returned translation should have keys: {list(text.keys())}",
