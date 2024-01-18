@@ -74,7 +74,7 @@ if __name__ == "__main__":
         original.append(text)
 
     translated: dict[int, Any] = {}
-    for i, (r, o) in enumerate(zip(responses, original)):
+    for i, (r, o, c) in enumerate(zip(responses, original, [{}] + original)):
         try:
             translations = to_int_keys(json.loads(r))
         except ValueError as e:
@@ -82,9 +82,7 @@ if __name__ == "__main__":
 
         if not translations.keys() == o.keys():
             fixed = to_int_keys(
-                json.loads(
-                    fix_completion(o, translations, _cache_file=f"batch_{i}_fixed.txt")
-                )
+                json.loads(fix_completion(c, o, r, _cache_file=f"batch_{i}_fixed.txt"))
             )
             if fixed.keys() == o.keys():
                 translations = fixed
