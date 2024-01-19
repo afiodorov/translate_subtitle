@@ -93,13 +93,16 @@ if __name__ == "__main__":
 
     with input_path.with_suffix(".pt.srt").open("w") as f:
         for i, translation in enumerate(translated.values()):
+            if isinstance(translation, str):
+                try:
+                    translation = json.loads(translation)
+                except json.JSONDecodeError:
+                    pass
+
             if isinstance(translation, dict):
-                if "translated" in translation:
-                    translation = translation["translated"]
-                elif "text" in translation:
-                    translation = translation["text"]
-                elif "translation" in translation:
-                    translation = translation["translation"]
+                keys = list(translation.keys())
+                if len(keys) == 1:
+                    translation = translation[keys[0]]
                 elif "pt" in translation:
                     translation = translation["pt"]
                 else:
@@ -107,6 +110,13 @@ if __name__ == "__main__":
 
             if not isinstance(translation, str):
                 raise ValueError(f"wrong type: {translation}")
+
+            translation = (
+                translation.replace('"', "")
+                .replace("\\", "")
+                .replace("{", "")
+                .replace("}", "")
+            ).strip()
 
             n = subtitles[i].number
             ts = subtitles[i].time
